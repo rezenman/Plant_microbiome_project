@@ -1,5 +1,5 @@
 # Plant_microbiome_project
-
+![Untitled](https://user-images.githubusercontent.com/67236735/225245574-23cfd9dd-1831-4b0b-b2e0-aa2ec11fa570.png)  
 This page lists all scripts used to analyze data for the plant microbiome project managed by the Reich lab in the Weizmann institute of science in Rehovot, Israel.  
 In the folder scripts you will find all kinds of scripts used for different analysis steps, here I will list each script purpose and an example of how to run it properly, please read carefully before starting.
 
