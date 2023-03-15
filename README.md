@@ -21,3 +21,6 @@ To use the script:
 __NOTE__ - the three arguments -I, -D, -N are mandatory, otherwise the script won't run  
 __NOTE__ - make sure to allocate enough memory, the larger the database the more memory needed
 
+Outputs:
+- First output is a fasta file containing non-redundant sequences that does not match the database  
+- Second output is a log.txt file containing all verbose
