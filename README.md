@@ -9,6 +9,10 @@ Two files are required:
 - Long read file in a fasta/fastq format(can be compressed)  
 - Database to enrich  
 
+Packages needed: cd-hit version 4.8.1, if working in the weizmann wexac cluster just use: 
+```
+module load cd-hit/4.8.1
+```
 To use the script: 
 ```
 ./enrich_db.sh -I "fasta/fastq input file" -D "database to compare to in fasta format" -N "sample name" -c "OPTIONAL - clustering identity to use with cd-hit"
