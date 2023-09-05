@@ -24,3 +24,32 @@ __NOTE__ - make sure to allocate enough memory, the larger the database the more
 Outputs:
 - First output is a fasta file containing non-redundant sequences that does not match the database  
 - Second output is a log.txt file containing all verbose
+
+
+## Running the UMI pipeline  
+Use the: __UMI_pipeline.sh__ script  
+Five inputs are required:
+- Forward primers to use for region demultiplexing (fasta format, see in sample data)
+- Reverse primers to use for region demultiplexing (fasta format, see in sample data)
+- Read1 fastq file (can be compressed)
+- Read2 fastq file (can be compressed)
+- Sample name 
+
+Packages needed: if working in the weizmann wexac cluster just use: 
+```
+module load cutadapt/4.2-GCCcore-11.3.0
+module load cd-hit/4.8.1
+module load BBMap/38.90-GCC-10.2.0
+module load seqtk/1.2
+module load seqkit/2.3.1
+module load R/3.5.1
+```
+To use the script: 
+```
+./UMI_pipeline.sh "for_primers" "reverse primers" "read1 fastq" "read2 fastq" "sample_name"
+``` 
+__NOTE__ - make sure to allocate enough memory and cores, the cd-hit process can take some time, more cores are much faster
+
+Outputs:
+- Two fastq files, R1 and R2, called $sample_name"_L001_R1_001.fastq.gz" and $sample_name"_L001_R2_001.fastq.gz"  
+- Log files, cutadapt_log.txt, clustering_df.txt - here you can see reads per region in the raw data and in the final files

@@ -9,7 +9,7 @@ module load R/3.5.1
 #run as following:
 # the script will create all files in the current directory
 #bsub -q gsla-cpu -n 5 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
-#./new_umi_pipeline_test_2.sh ../forward.fasta ../reverse.fasta ../380S_7RXS_S16_R1_001.fastq.gz ../380S_7RXS_S16_R2_001.fastq.gz sample_name
+# ./UMI_pipeline.sh "for_primers" "reverse primers" "read1 fastq" "read2 fastq" "sample_name"
 
 # for_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/forward.fasta"
 # rev_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/reverse.fasta"
