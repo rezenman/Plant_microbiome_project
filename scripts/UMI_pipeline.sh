@@ -7,7 +7,8 @@ module load seqkit/2.3.1
 module load R/3.5.1
 
 #run as following:
-# the script will create all files in the current directory
+# the script will create all files in the current directory, to run on the wexac cluster use:
+
 # bsub -q gsla-cpu -n 20 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
 #  ./UMI_pipeline.sh 'for_primers' 'rev_primers' 'read1' 'read2' 'sample_name' 
 
@@ -24,7 +25,7 @@ read_2=$4
 sample_name=$5
 rscript="/home/labs/bfreich/shaharr/new_microbiome_pipeline/aux_dada_script.R"
 
-##seperating to regions with proper all V pairing
+##seperating to variable regions 
 ##This step also trasnform the adapter, umi and stepper to lower case letters. A log with number of reads per region is "cutadapt_log.txt"
 cutadapt \
     --no-indels \
