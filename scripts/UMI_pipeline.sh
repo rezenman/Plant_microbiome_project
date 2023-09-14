@@ -8,8 +8,8 @@ module load R/3.5.1
 
 #run as following:
 # the script will create all files in the current directory
-#bsub -q gsla-cpu -n 5 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
-# ./UMI_pipeline.sh "for_primers" "reverse primers" "read1 fastq" "read2 fastq" "sample_name"
+# bsub -q gsla-cpu -n 20 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
+#  ./UMI_pipeline.sh
 
 # for_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/forward.fasta"
 # rev_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/reverse.fasta"
@@ -27,24 +27,25 @@ rscript="/home/labs/bfreich/shaharr/new_microbiome_pipeline/aux_dada_script.R"
 ##seperating to regions with proper V pairing (V1V2 forward can only be with V1V2 reverse etc.)
 ##This step also trasnform the adapter, umi and stepper to lower case letters, log with number of reads per region is "cutadapt_log.txt"
 cutadapt \
-    --pair-adapters \
     --no-indels \
     --action=lowercase \
     -g file:$for_primers \
     -G file:$rev_primers \
     --cores=0 \
-    -o {name}.1.fastq.gz -p {name}.2.fastq.gz \
+    -o {name1}-{name2}.1.fastq.gz -p {name1}-{name2}.2.fastq.gz \
      $read_1 $read_2 &>> cutadapt_log.txt
 
 ##for every variable region, creating a seperate fasta file with only headers, and the primer,stepper and a umi
 
-var_regions=$(find . -name "*.1.fastq.gz" | grep -Ev 'unknown')
-echo "region" "num_read1" "num_read2" "num_seeds" "num_read1_final" "num_read2_final" > clustering_log.txt
+#find all combinations of regions found, keep only those with more than 10000 reads
+var_regions=$(find . -name "V*-V*.1.fastq.gz" -exec zgrep -EHc "^@" {} \; | sed 's/:/ /g' | sort -k 2n | awk '$2 >= 10000 {print $1}')
+
+echo "region" "num_read1" "num_read2" "num_seeds" "num_read1_final_after_length_filter" "num_read2_final_after_length_filter" > clustering_log.txt
 
 for i in $var_regions
 do  
     #extracting region name, finding the name files read 1 and read 2
-    region=$(echo $i | cut -d'_' -f 1 | rev | cut -d'/' -f 1 | rev)
+    region=$(echo $i | sed 's/.1.fastq.gz//g' | cut -d'/' -f 2)
     r1=$(ls $region*.1.fastq.gz)
     r2=$(ls $region*.2.fastq.gz)
 
@@ -64,6 +65,7 @@ do
     readlength.sh in=$region'_adapter_umi_stepper.fasta' out=$region'_histogram.txt'
 
     #Clustering the umi,stepper,adapter sequences to remove redundant sequences and keep only one seed per group
+    # bsub -q gsla-cpu -n 20 -R "rusage[mem=1000]" -R "span[hosts=1]" -J cd-hit -o cd-hit.out -e cd-hit.err \
     cd-hit-est \
         -i $region'_adapter_umi_stepper.fasta' \
         -o $region'_adapter_umi_stepper_97.fasta' \
@@ -84,12 +86,14 @@ do
     seqkit rmdup -n $region'_filtered.2.fastq.gz' -o $region'_filtered_dedup.2.fastq.gz'
 
     #running cutadapt again this time removing the lowercase letters and their quality scores, for each region seperately
-    primer_for_2nd_cut=$(grep -E $region $for_primers -A1 | tail -n 1)
-    primer_rev_2nd_cut=$(grep -E $region $rev_primers -A1 | tail -n 1)
+    primer_for_2nd_cut=$(echo $region | cut -d'-' -f 1 | grep -Ef - $for_primers -A1 | tail -n 1)
+    primer_rev_2nd_cut=$(echo $region | cut -d'-' -f 2 | grep -Ef - $rev_primers -A1 | tail -n 1)
 
     cutadapt \
+        -e 0.15 \
         --pair-adapters \
         --no-indels \
+        --minimum-length 100 \
         --action=trim \
         -g $primer_for_2nd_cut \
         -G $primer_rev_2nd_cut \
@@ -97,8 +101,9 @@ do
         -o $region'_for_dada2.1.fastq.gz' -p $region'_for_dada2.2.fastq.gz' \
         $region'_filtered_dedup.1.fastq.gz' $region'_filtered_dedup.2.fastq.gz'
 
-    rm unknown_for_dada2.1.fastq.gz unknown_for_dada2.2.fastq.gz
 
+    find . -name "*unknown*" -exec rm {} \;
+    
     # counting number of reads before and after and printing to report
     num_read1=$(zgrep -Ec "^@" $r1)
     num_read2=$(zgrep -Ec "^@" $r2)
@@ -163,10 +168,20 @@ find . -maxdepth 1 -name "*.fastq.gz" -exec mv {} "./compressed_fastq_files" \;
 ## Concatenating all regions to create the final files
 cd fastq_with_primers
 
+#locating files that are not perfect pairing of for and rev primers (e.g, V1V2_f and V2V3_r) and changin their names
+for i in $(ls *fastq)
+do
+  reg_1=$(echo $i | grep -Eo 'V[0-9]V[0-9]|ITS[0-9]' | head -n 1)
+  reg_2=$(echo $i | grep -Eo 'V[0-9]V[0-9]|ITS[0-9]' | tail -n 1)
+  echo $reg_1 $reg_2
+  if [ $reg_1 == $reg_2 ]; then echo "Good"; else mv $i 'Diff_regions_'$i && echo "changed name"; fi
+done
+
 name_1=$sample_name"_L001_R1_001.fastq.gz"
 name_2=$sample_name"_L001_R2_001.fastq.gz"
 
-cat *_for.fasta*fastq | gzip -c > $name_1 
-cat *_rev.fasta*fastq | gzip -c > $name_2 
+#concatenating all fastq files with proper primer pairing (e.g, only V1V2_f with V1V2_r, V2V3_f with V2V3_r etc.) and gzipping
+cat Samp*_for.fasta*fastq | gzip -c > $name_1 
+cat Samp*_rev.fasta*fastq | gzip -c > $name_2 
 
 ##final files to transfer to Noam for SMURF analysis called: $sample_name"_L001_R1_001.fastq.gz" and $sample_name"_L001_R2_001.fastq.gz"
