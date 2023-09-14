@@ -9,7 +9,7 @@ module load R/3.5.1
 #run as following:
 # the script will create all files in the current directory
 # bsub -q gsla-cpu -n 20 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
-#  ./UMI_pipeline.sh
+#  ./UMI_pipeline.sh 'for_primers' 'rev_primers' 'read1' 'read2' 'sample_name' 
 
 # for_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/forward.fasta"
 # rev_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/reverse.fasta"
@@ -24,8 +24,8 @@ read_2=$4
 sample_name=$5
 rscript="/home/labs/bfreich/shaharr/new_microbiome_pipeline/aux_dada_script.R"
 
-##seperating to regions with proper V pairing (V1V2 forward can only be with V1V2 reverse etc.)
-##This step also trasnform the adapter, umi and stepper to lower case letters, log with number of reads per region is "cutadapt_log.txt"
+##seperating to regions with proper all V pairing
+##This step also trasnform the adapter, umi and stepper to lower case letters. A log with number of reads per region is "cutadapt_log.txt"
 cutadapt \
     --no-indels \
     --action=lowercase \
@@ -37,8 +37,8 @@ cutadapt \
 
 ##for every variable region, creating a seperate fasta file with only headers, and the primer,stepper and a umi
 
-#find all combinations of regions found, keep only those with more than 10000 reads
-var_regions=$(find . -name "V*-V*.1.fastq.gz" -exec zgrep -EHc "^@" {} \; | sed 's/:/ /g' | sort -k 2n | awk '$2 >= 10000 {print $1}')
+#find all combinations of regions found
+var_regions=$(find . -name "V*-V*.1.fastq.gz" -exec zgrep -EHc "^@" {} \; | sed 's/:/ /g' | sort -k 2n | awk '{print $1}')
 
 echo "region" "num_read1" "num_read2" "num_seeds" "num_read1_final_after_length_filter" "num_read2_final_after_length_filter" > clustering_log.txt
 
@@ -65,7 +65,6 @@ do
     readlength.sh in=$region'_adapter_umi_stepper.fasta' out=$region'_histogram.txt'
 
     #Clustering the umi,stepper,adapter sequences to remove redundant sequences and keep only one seed per group
-    # bsub -q gsla-cpu -n 20 -R "rusage[mem=1000]" -R "span[hosts=1]" -J cd-hit -o cd-hit.out -e cd-hit.err \
     cd-hit-est \
         -i $region'_adapter_umi_stepper.fasta' \
         -o $region'_adapter_umi_stepper_97.fasta' \
