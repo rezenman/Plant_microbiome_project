@@ -7,10 +7,9 @@ module load seqkit/2.3.1
 module load R/3.5.1
 
 #run as following:
-# the script will create all files in the current directory, to run on the wexac cluster use:
-
+# the script will create all files in the current directory
 # bsub -q gsla-cpu -n 20 -R "rusage[mem=5000]" -R "span[hosts=1]" -J new_pip -o new_pip.out -e new_pip.err \
-#  ./UMI_pipeline.sh 'for_primers' 'rev_primers' 'read1' 'read2' 'sample_name' 
+#  ./UMI_pipeline.sh
 
 # for_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/forward.fasta"
 # rev_primers="/home/labs/bfreich/shaharr/new_microbiome_pipeline/reverse.fasta"
@@ -25,8 +24,8 @@ read_2=$4
 sample_name=$5
 rscript="/home/labs/bfreich/shaharr/new_microbiome_pipeline/aux_dada_script.R"
 
-##seperating to variable regions 
-##This step also trasnform the adapter, umi and stepper to lower case letters. A log with number of reads per region is "cutadapt_log.txt"
+##seperating to regions with proper V pairing (V1V2 forward can only be with V1V2 reverse etc.)
+##This step also trasnform the adapter, umi and stepper to lower case letters, log with number of reads per region is "cutadapt_log.txt"
 cutadapt \
     --no-indels \
     --action=lowercase \
@@ -38,8 +37,8 @@ cutadapt \
 
 ##for every variable region, creating a seperate fasta file with only headers, and the primer,stepper and a umi
 
-#find all combinations of regions found
-var_regions=$(find . -name "V*-V*.1.fastq.gz" -exec zgrep -EHc "^@" {} \; | sed 's/:/ /g' | sort -k 2n | awk '{print $1}')
+#find all combinations of regions found, keep only those with more than 10000 reads
+var_regions=$(find . -name "V*-V*.1.fastq.gz" -exec zgrep -EHc "^@" {} \; | sed 's/:/ /g' | sort -k 2n | awk '$2 >= 10000 {print $1}')
 
 echo "region" "num_read1" "num_read2" "num_seeds" "num_read1_final_after_length_filter" "num_read2_final_after_length_filter" > clustering_log.txt
 
@@ -66,13 +65,7 @@ do
     readlength.sh in=$region'_adapter_umi_stepper.fasta' out=$region'_histogram.txt'
 
     #Clustering the umi,stepper,adapter sequences to remove redundant sequences and keep only one seed per group
-    cd-hit-est \
-        -i $region'_adapter_umi_stepper.fasta' \
-        -o $region'_adapter_umi_stepper_97.fasta' \
-        -c 0.97 -n 10 -T 0 -d 0 -M 0 -r 0 -g 1
-
-    #creating a a data frame to show for each seed how many sequences clustered to
-    clstr2txt.pl $region'_adapter_umi_stepper_97.fasta.clstr' > $region'_cluster_df.txt'
+    dedupe.sh in=$region'_adapter_umi_stepper.fasta' out=$region'_adapter_umi_stepper_97.fasta' outd=$region'_duplicates.fasta'
 
     #Extracting the seed headers, and filtering the original fastq files (following cutadapt) to contain only one sequence per cluster
     grep "^>" $region'_adapter_umi_stepper_97.fasta' | sed 's/^>//g' > $region'_headers_to_keep_after_clustering.txt'
@@ -135,14 +128,14 @@ for i in $(ls Samp*.fasta); do sed 's/ /\n/g' $i > "$i"_mod ; done
 
 for fa in $(ls *_for.fasta_mod)
   do
-    fwd=$(echo $fa | sed -E 's/Samp|_for.*//g')
+    fwd=$(echo $fa | sed -E 's/Samp|_for.*//g' | cut -d'-' -f 1)
     seq_for=$(grep -A1 $fwd $for_primers | grep -v $fwd | sed -E 's/M|R|W|V|H/A/g' | sed -E 's/Y|B|N|S/C/g' | sed -E 's/K|D/G/g')
     sed "2~2 s/^/$seq_for/" $fa > $fa"_primers_added"  
   done
 
 for fa in $(ls *_rev.fasta_mod)
   do
-    rev=$(echo $fa | sed -E 's/Samp|_for.*//g')
+    rev=$(echo $fa | sed -E 's/Samp|_for.*//g' | cut -d'-' -f 2)
     seq_rev=$(grep -A1 $rev $rev_primers | grep -v $rev | sed -E 's/M|R|W|V|H/A/g' | sed -E 's/Y|B|N|S/C/g' | sed -E 's/K|D/G/g')
     sed "2~2 s/^/$seq_rev/" $fa > $fa"_primers_added"  
   done
@@ -184,4 +177,5 @@ name_2=$sample_name"_L001_R2_001.fastq.gz"
 cat Samp*_for.fasta*fastq | gzip -c > $name_1 
 cat Samp*_rev.fasta*fastq | gzip -c > $name_2 
 
+echo "Finished All"
 ##final files to transfer to Noam for SMURF analysis called: $sample_name"_L001_R1_001.fastq.gz" and $sample_name"_L001_R2_001.fastq.gz"
