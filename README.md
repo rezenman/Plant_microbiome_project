@@ -3,7 +3,22 @@
 This page lists all scripts used to analyze data for the plant microbiome project managed by the Reich lab in the Weizmann institute of science in Rehovot, Israel.  
 In the folder scripts you will find all kinds of scripts used for different analysis steps, here I will list each script purpose and an example of how to run it properly, please read carefully before starting.
 
-## Enriching the database with long reads   
+## Enriching the database with long reads
+All Relevant scripts are in the scripts/db_enrichment_all_steps folder
+
+# First script to run
+Use the: __01_prepare_raw_files.sh__ script
+
+This script will filter the long reads fastq file and will only keep reads which match the primers that are in the primer file you will list, 
+it will also reverse complement the reads so in the end all reads will have the same directionality
+
+steps to perform
+- create a primer file
+- change the path to the primer file and the r script called reads_per_region.R
+
+Run this script from the root folder where all long read files are found
+
+#Second script to run    
 Use the: __enrich_db.sh__ script  
 Two files are required:  
 - Long read file in a fasta/fastq format(can be compressed)  
