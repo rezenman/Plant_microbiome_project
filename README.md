@@ -40,6 +40,21 @@ Outputs:
 - First output is a fasta file containing non-redundant sequences that does not match the database  
 - Second output is a log.txt file containing all verbose
 
+### Third script to run
+Use the: __03_Edit_following_cdhit_2d.sh__ script
+
+__NOTE__ - Make sure to use the correct seeds file in the first grep argument, this should be the seeds output from the last step which contains the seeds to add to the database
+
+This script will change the header names to running numbers (in this example it changes from 2000000 onwards) i other numbers are needed change in the script.
+It will also create a table with original header and to what number it was changed
+In the last step it will linearize all sequences and create the final fasta file to give to Noam, and will be added to the database for SMURF analysis
+
+### Fourth and Fifth scripts to run 
+found in the __approximate_taxonomy__ folder 
+- First create a blast database from the original silva database (without any of our additions) (the script __blast_db_build.sh__)
+__NOTE__ - make sure to cut the headers to only the id, otherwise the blast database build command will output an error becasuse the headers are too long
+- Next, run the seeds that you want to add to the updated databse against the Silva datbase. to find the bast matching taxonomy (the script __blast_run.sh__)
+- In the last step run the __arrange_blast.R__ script to create a table with best matching taxon to each new header
 
 ## Running the UMI pipeline  
 Use the: __UMI_pipeline.sh__ script  
