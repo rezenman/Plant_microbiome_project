@@ -6,7 +6,7 @@ In the folder scripts you will find all kinds of scripts used for different anal
 ## Enriching the database with long reads
 All Relevant scripts are in the scripts/db_enrichment_all_steps folder
 
-# First script to run
+### First script to run
 Use the: __01_prepare_raw_files.sh__ script
 
 This script will filter the long reads fastq file and will only keep reads which match the primers that are in the primer file you will list, 
@@ -18,7 +18,7 @@ steps to perform
 
 Run this script from the root folder where all long read files are found
 
-#Second script to run    
+### Second script to run    
 Use the: __enrich_db.sh__ script  
 Two files are required:  
 - Long read file in a fasta/fastq format(can be compressed)  
