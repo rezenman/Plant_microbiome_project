@@ -6,7 +6,7 @@ library(dplyr)
 setwd("~/New_UMI_and_Swift_after_smurf/NEW_UMI/Results_New_UMI_samples_16102023_based_UMI_BASED_database_augmented_Oct2023_RL_135_REGIONS_1_2_3_4_5_6/")
 
 ##read the csv file (produced by Noam) which match the nes headers in our database(running numbers from 1....) to silva original headers
-head_to_tax = read.csv("../../Arrange_taxonomy/SILVA_138.1_SSURef_NR99_tax_silva_trunc_HEADER.csv")
+head_to_tax = read.csv("/home/labs/bfreich/shaharr/New_UMI_and_Swift_after_smurf/Arrange_taxonomy/SILVA_138.1_SSURef_NR99_tax_silva_trunc_HEADER.csv")
 head(head_to_tax)
 colnames(head_to_tax)[1] = "id" #change the first column name to id for merging in following steps
 head_to_tax$blast_par = NA 
@@ -100,7 +100,8 @@ write.csv(x = counts_with_taxonomy, file = "counts_with_taxonomy_fixed.csv")
 
 # seperate each sample to its own csv file----------------------------------------------------
 
-#dir.create("seperate_samples") - this is only to create a seperate folder to contain all seperate samples csv files
+dir.create("seperate_samples")  #this is only to create a seperate folder to contain all seperate samples csv files
+
 #for each sample writing a seperate csv file
 for(i in 5:dim(counts_with_taxonomy)[2]){
   sample_name = colnames(counts_with_taxonomy)[i]
