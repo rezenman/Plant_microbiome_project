@@ -3,7 +3,7 @@ library(ShortRead)
 library(dplyr)
 
 ##set the working directory to the root directory where all smurf groups are found in the sub-directories
-setwd("~/New_UMI_and_Swift_after_smurf/NEW_UMI/Results_New_UMI_samples_16102023_based_UMI_BASED_database_augmented_Oct2023_RL_135_REGIONS_1_2_3_4_5_6/")
+setwd("/home/labs/bfreich/shaharr/New_UMI_and_Swift_after_smurf/NEW_UMI/Results_New_UMI_samples_16102023_based_UMI_BASED_database_augmented_Oct2023_RL_135_REGIONS_1_2_3_4_5_6/")
 
 ##read the csv file (produced by Noam) which match the nes headers in our database(running numbers from 1....) to silva original headers
 head_to_tax = read.csv("/home/labs/bfreich/shaharr/New_UMI_and_Swift_after_smurf/Arrange_taxonomy/SILVA_138.1_SSURef_NR99_tax_silva_trunc_HEADER.csv")
@@ -11,19 +11,27 @@ head(head_to_tax)
 colnames(head_to_tax)[1] = "id" #change the first column name to id for merging in following steps
 head_to_tax$blast_par = NA 
 head_to_tax$blast_matches = NA #create two new columns with NA values (those will be relevant only to new headers) 
+View(head_to_tax)
+
 
 ##read the csv containing the approximated taxonomy for new headers
-new_headers_blast_alignments = read.csv("~/PacBio/All_raw_fastas/db_enrichment/approximate_taxonomy/new_seeds_blast_matches.csv") %>% 
+new_headers_blast_alignments = read.csv("/home/labs/bfreich/shaharr/PacBio/All_raw_fastas/db_enrichment/approximate_taxonomy/new_seeds_blast_matches.csv") %>% 
   select(-X) %>% dplyr::rename("blast_matches" = "num_headers", "id" = "query")
+View(new_headers_blast_alignments)
+
 
 #binding the two taxonomy tables to create one contatinig original taxonomy of headers from silva and approximated taxonomy for new headers
 head_to_tax = rbind(head_to_tax, new_headers_blast_alignments)
 head(head_to_tax)
 
+
 ##reading the counts data, this is a modified version of the smurf output (delete the first line and coulumns "domain":"species")
-counts = read.table("groups_arranged.txt", header = T, check.names = F)
+counts = read.table("/home/labs/bfreich/shaharr/New_UMI_and_Swift_after_smurf/NEW_UMI/Results_New_UMI_samples_16102023_based_UMI_BASED_database_augmented_Oct2023_RL_135_REGIONS_1_2_3_4_5_6/groups_arranged.txt",
+                    header = T, check.names = F)
 colnames(counts)
 dim(counts)
+head(counts)
+
 
 ##listing all groups produced by smurf
 all_groups = list.files(path = "./Groups/", pattern = "^sample.*fasta$", recursive = T, full.names = T)
@@ -72,8 +80,8 @@ for(j in 1:length(only_unique_hash)){
 }
 
 hash_to_id = data.frame(hash = hash, id = as.numeric(ids), num_headers = num_headers)
-
-
+head(hash_to_id)
+head(head_to_tax)
 
 
 #merging has and id with taxon, arrangig and assigining the string "No_Taxonomy" to headers which had no match
